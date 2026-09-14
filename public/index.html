@@ -49,6 +49,12 @@
     const voiceBtn = document.getElementById('voiceBtn');
 
     // ===== TTS：让她回复能读出来（浏览器原生） =====
+    let voicesLoaded = [];
+    function pickVoice() {
+      voicesLoaded = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+      return voicesLoaded.find(v => v.lang && v.lang.startsWith('zh') && /female|xiaoxiao|xiao/i.test(v.name)) ||
+             voicesLoaded.find(v => v.lang && v.lang.startsWith('zh'));
+    }
     function speak(text) {
       try {
         if (!('speechSynthesis' in window)) return;
@@ -57,9 +63,7 @@
         u.lang = 'zh-CN';
         u.rate = 1.05;
         u.pitch = 1.1;
-        const voices = window.speechSynthesis.getVoices();
-        const zh = voices.find(v => v.lang && v.lang.startsWith('zh') && /female|xiaoxiao|xiao/i.test(v.name)) ||
-                   voices.find(v => v.lang && v.lang.startsWith('zh'));
+        const zh = pickVoice();
         if (zh) u.voice = zh;
         window.speechSynthesis.speak(u);
       } catch (e) {}
@@ -116,6 +120,18 @@
       bubble.className = 'bubble';
       bubble.textContent = text;
       div.appendChild(bubble);
+      // 她的消息加一个播放按钮（解决 Safari 自动播放限制）
+      if (who === 'her') {
+        const playBtn = document.createElement('button');
+        playBtn.className = 'play-btn';
+        playBtn.textContent = '🔊';
+        playBtn.title = '播放';
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          speak(text);
+        });
+        div.appendChild(playBtn);
+      }
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -173,8 +189,8 @@
     });
     voiceBtn.addEventListener('click', startVoice);
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+      pickVoice();
+      window.speechSynthesis.onvoiceschanged = () => { pickVoice(); };
     }
     clearBtn.addEventListener('click', () => {
       history = [];
