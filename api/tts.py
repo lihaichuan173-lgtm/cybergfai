@@ -11,7 +11,7 @@ import urllib.parse
 
 import edge_tts
 
-VOICE = "zh-CN-XiaoxiaoNeural"  # 晓晓，温柔女声
+VOICE = "zh-CN-XiaoyiNeural"  # 晓伊，活泼软萌女声
 
 
 def run_tts(text):
