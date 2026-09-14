@@ -23,11 +23,7 @@
     </div>
 
     <!-- 消息区 -->
-    <div class="messages" id="messages">
-      <div class="msg left">
-        <div class="bubble">淦，你终于来了，老子刚还寻思你死哪去了。说吧，今天找我啥事？</div>
-      </div>
-    </div>
+    <div class="messages" id="messages"></div>
 
     <!-- 输入区 -->
     <div class="input-bar">
@@ -37,12 +33,26 @@
   </div>
 
   <script>
-    // 最近对话历史（存内存，刷新就清空，轻量方案）
+    // 对话历史存 localStorage，刷新/重开不丢（同一台设备）
+    const STORAGE_KEY = 'cybergfai_history';
     let history = [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) history = JSON.parse(saved);
+    } catch (e) { history = []; }
+
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('sendBtn');
     const clearBtn = document.getElementById('clearBtn');
+
+    function saveHistory() {
+      try {
+        // 最多保留最近 200 条，避免占太多空间
+        const keep = history.slice(-200);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(keep));
+      } catch (e) {}
+    }
 
     function addMessage(text, who) {
       const div = document.createElement('div');
@@ -55,12 +65,24 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    // 页面加载时恢复历史消息显示
+    function restoreMessages() {
+      if (history.length === 0) {
+        addMessage('淦，你终于来了，老子刚还寻思你死哪去了。说吧，今天找我啥事？', 'her');
+        return;
+      }
+      history.forEach(h => {
+        addMessage(h.content, h.role === 'user' ? 'me' : 'her');
+      });
+    }
+
     async function send() {
       const text = inputEl.value.trim();
       if (!text) return;
       inputEl.value = '';
       addMessage(text, 'me');
       history.push({ role: 'user', content: text });
+      saveHistory();
 
       // 显示"正在输入"
       const typing = document.createElement('div');
@@ -79,6 +101,7 @@
         const data = await r.json();
         const reply = data.reply || data.error || '草，老子卡壳了。';
         history.push({ role: 'assistant', content: reply });
+        saveHistory();
         addMessage(reply, 'her');
       } catch (e) {
         addMessage('草，网络抽风了，等下再试。', 'her');
@@ -94,9 +117,13 @@
     });
     clearBtn.addEventListener('click', () => {
       history = [];
+      localStorage.removeItem(STORAGE_KEY);
       messagesEl.innerHTML = '';
       addMessage('记忆清空了，你谁啊？', 'her');
     });
+
+    // 启动时恢复
+    restoreMessages();
   </script>
 </body>
 </html>
