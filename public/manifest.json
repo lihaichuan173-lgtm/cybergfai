@@ -5,5 +5,12 @@
   "display": "standalone",
   "background_color": "#ededed",
   "theme_color": "#ededed",
-  "icons": []
+  "icons": [
+    {
+      "src": "avatar.jpg",
+      "sizes": "2048x2048",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
 }
