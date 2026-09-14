@@ -49,23 +49,15 @@
     const voiceBtn = document.getElementById('voiceBtn');
 
     // ===== TTS：让她回复能读出来（浏览器原生） =====
-    let voicesLoaded = [];
-    function pickVoice() {
-      voicesLoaded = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-      return voicesLoaded.find(v => v.lang && v.lang.startsWith('zh') && /female|xiaoxiao|xiao/i.test(v.name)) ||
-             voicesLoaded.find(v => v.lang && v.lang.startsWith('zh'));
-    }
+    let audioEl = null;
     function speak(text) {
       try {
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'zh-CN';
-        u.rate = 1.05;
-        u.pitch = 1.1;
-        const zh = pickVoice();
-        if (zh) u.voice = zh;
-        window.speechSynthesis.speak(u);
+        // 用 edge-tts 接口（晓晓音色），比浏览器原生好很多
+        if (!audioEl) {
+          audioEl = new Audio();
+        }
+        audioEl.src = '/api/tts?text=' + encodeURIComponent(text);
+        audioEl.play().catch(() => {});
       } catch (e) {}
     }
 
@@ -188,10 +180,7 @@
       if (e.key === 'Enter') send();
     });
     voiceBtn.addEventListener('click', startVoice);
-    if ('speechSynthesis' in window) {
-      pickVoice();
-      window.speechSynthesis.onvoiceschanged = () => { pickVoice(); };
-    }
+
     clearBtn.addEventListener('click', () => {
       history = [];
       localStorage.removeItem(STORAGE_KEY);
