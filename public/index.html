@@ -27,6 +27,7 @@
 
     <!-- 输入区 -->
     <div class="input-bar">
+      <button class="voice-btn" id="voiceBtn" title="语音输入">🎤</button>
       <input type="text" id="input" placeholder="说点什么..." autocomplete="off">
       <button id="sendBtn">发送</button>
     </div>
@@ -45,6 +46,60 @@
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('sendBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const voiceBtn = document.getElementById('voiceBtn');
+
+    // ===== TTS：让她回复能读出来（浏览器原生） =====
+    function speak(text) {
+      try {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'zh-CN';
+        u.rate = 1.05;
+        u.pitch = 1.1;
+        const voices = window.speechSynthesis.getVoices();
+        const zh = voices.find(v => v.lang && v.lang.startsWith('zh') && /female|xiaoxiao|xiao/i.test(v.name)) ||
+                   voices.find(v => v.lang && v.lang.startsWith('zh'));
+        if (zh) u.voice = zh;
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    }
+
+    // ===== ASR：语音输入（浏览器原生） =====
+    let recognizing = false;
+    function startVoice() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        addMessage('草，这个浏览器不支持语音输入，换 Chrome 试试。', 'her');
+        return;
+      }
+      if (recognizing) return;
+      const rec = new SR();
+      rec.lang = 'zh-CN';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      recognizing = true;
+      voiceBtn.textContent = '🔴';
+      rec.onresult = (e) => {
+        const text = e.results[0][0].transcript.trim();
+        if (text) {
+          inputEl.value = text;
+          send();
+        }
+      };
+      rec.onerror = (e) => {
+        recognizing = false;
+        voiceBtn.textContent = '🎤';
+        if (e.error === 'not-allowed') {
+          addMessage('草，麦克风权限没给，去设置里开一下。', 'her');
+        }
+      };
+      rec.onend = () => {
+        recognizing = false;
+        voiceBtn.textContent = '🎤';
+      };
+      rec.start();
+    }
 
     function saveHistory() {
       try {
@@ -103,6 +158,7 @@
         history.push({ role: 'assistant', content: reply });
         saveHistory();
         addMessage(reply, 'her');
+        speak(reply);
       } catch (e) {
         addMessage('草，网络抽风了，等下再试。', 'her');
       } finally {
@@ -115,6 +171,11 @@
     inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') send();
     });
+    voiceBtn.addEventListener('click', startVoice);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
     clearBtn.addEventListener('click', () => {
       history = [];
       localStorage.removeItem(STORAGE_KEY);
