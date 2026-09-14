@@ -1,0 +1,10 @@
+{
+  "name": "cybergfai",
+  "version": "1.0.0",
+  "description": "CyberGFAI - 赛博女友 AI",
+  "type": "module",
+  "scripts": {
+    "start": "node api/chat.js"
+  },
+  "dependencies": {}
+}

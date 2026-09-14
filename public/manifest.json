@@ -1,0 +1,9 @@
+{
+  "name": "她",
+  "short_name": "她",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ededed",
+  "theme_color": "#ededed",
+  "icons": []
+}

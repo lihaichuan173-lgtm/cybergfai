@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ededed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>她</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div class="chat-container">
+    <!-- 顶部栏 -->
+    <div class="header">
+      <div class="avatar">她</div>
+      <div class="header-info">
+        <div class="name">她</div>
+        <div class="status">在线</div>
+      </div>
+      <button class="clear-btn" id="clearBtn" title="清空对话">清空</button>
+    </div>
+
+    <!-- 消息区 -->
+    <div class="messages" id="messages">
+      <div class="msg left">
+        <div class="bubble">淦，你终于来了，老子刚还寻思你死哪去了。说吧，今天找我啥事？</div>
+      </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="input-bar">
+      <input type="text" id="input" placeholder="说点什么..." autocomplete="off">
+      <button id="sendBtn">发送</button>
+    </div>
+  </div>
+
+  <script>
+    // 最近对话历史（存内存，刷新就清空，轻量方案）
+    let history = [];
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    function addMessage(text, who) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (who === 'me' ? 'right' : 'left');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+      div.appendChild(bubble);
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function send() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      inputEl.value = '';
+      addMessage(text, 'me');
+      history.push({ role: 'user', content: text });
+
+      // 显示"正在输入"
+      const typing = document.createElement('div');
+      typing.className = 'msg left';
+      typing.innerHTML = '<div class="bubble typing">…</div>';
+      typing.id = 'typing';
+      messagesEl.appendChild(typing);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      try {
+        const r = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, history: history }),
+        });
+        const data = await r.json();
+        const reply = data.reply || data.error || '草，老子卡壳了。';
+        history.push({ role: 'assistant', content: reply });
+        addMessage(reply, 'her');
+      } catch (e) {
+        addMessage('草，网络抽风了，等下再试。', 'her');
+      } finally {
+        const t = document.getElementById('typing');
+        if (t) t.remove();
+      }
+    }
+
+    sendBtn.addEventListener('click', send);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') send();
+    });
+    clearBtn.addEventListener('click', () => {
+      history = [];
+      messagesEl.innerHTML = '';
+      addMessage('记忆清空了，你谁啊？', 'her');
+    });
+  </script>
+</body>
+</html>
